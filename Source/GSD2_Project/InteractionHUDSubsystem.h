@@ -10,6 +10,7 @@ class APlayerController;
 // 화면 가운데 조준점(+) 표시
 // 상호작용 가능한 물체(InteractableBase)를 보고 있으면 초록색으로 바뀌고 [F] 표시
 // 레벨에 따로 배치할 필요 없이 게임 실행 시 자동으로 동작한다
+// + 테스트용: "DebugLabel" 문자열 변수가 있는 액터 위에 이름표 표시 (gsd.ShowDebugLabels 0 으로 끔)
 UCLASS()
 class GSD2_PROJECT_API UInteractionHUDSubsystem : public UWorldSubsystem
 {
@@ -22,6 +23,7 @@ public:
 
 private:
 	void Draw(UCanvas* Canvas, APlayerController* PC);
+	void DrawDebugLabels(UCanvas* Canvas, APlayerController* PC, const FVector& CameraLocation);
 
 	FDelegateHandle DrawHandle;
 };

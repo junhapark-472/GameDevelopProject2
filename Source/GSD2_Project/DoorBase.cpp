@@ -1,9 +1,9 @@
 ﻿#include "DoorBase.h"
+#include "GSD2FunctionLibrary.h"
 #include "InventoryComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Engine/Engine.h"
 #include "UObject/ConstructorHelpers.h"
 
 ADoorBase::ADoorBase()
@@ -19,7 +19,7 @@ ADoorBase::ADoorBase()
 	DoorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh"));
 	DoorMesh->SetupAttachment(Hinge);
 
-	// 기본 모양: 폭 100, 높이 200, 두께 10 인 판 (한쪽 끝이 Hinge 에 붙음)
+	// 기본 모양: 엔진 기본 큐브로 만든 폭 100, 높이 200, 두께 10 판 (한쪽 끝이 Hinge 에 붙음)
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (CubeMesh.Succeeded())
 	{
@@ -27,16 +27,19 @@ ADoorBase::ADoorBase()
 	}
 	DoorMesh->SetRelativeLocation(FVector(0.f, 50.f, 100.f));
 	DoorMesh->SetRelativeScale3D(FVector(0.1f, 1.f, 2.f));
+
+	PromptText = FText::FromString(TEXT("문 열기"));
 }
 
 void ADoorBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	const float Target = bIsOpen ? OpenAngle : 0.f;
-	if (!FMath::IsNearlyEqual(CurrentAngle, Target, 0.01f))
+	// 목표 각도까지 부드럽게 회전
+	const float TargetAngle = bIsOpen ? OpenAngle : 0.f;
+	if (!FMath::IsNearlyEqual(CurrentAngle, TargetAngle, 0.01f))
 	{
-		CurrentAngle = FMath::FInterpTo(CurrentAngle, Target, DeltaTime, OpenSpeed);
+		CurrentAngle = FMath::FInterpTo(CurrentAngle, TargetAngle, DeltaTime, OpenSpeed);
 		Hinge->SetRelativeRotation(FRotator(0.f, CurrentAngle, 0.f));
 	}
 }
@@ -46,34 +49,45 @@ void ADoorBase::Interact_Implementation(AActor* Interactor)
 	if (bLocked)
 	{
 		UInventoryComponent* Inventory = Interactor ? Interactor->FindComponentByClass<UInventoryComponent>() : nullptr;
+		const bool bHasKey = !RequiredItemID.IsNone() && Inventory && Inventory->HasItem(RequiredItemID);
 
-		if (!RequiredItemID.IsNone() && Inventory && Inventory->HasItem(RequiredItemID))
+		if (!bHasKey)
 		{
-			if (bConsumeKey)
-			{
-				Inventory->RemoveItem(RequiredItemID);
-			}
-			Unlock();
-		}
-		else
-		{
-			if (GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, LockedMessage);
-			}
+			UGSD2FunctionLibrary::ShowMessage(LockedMessage, FLinearColor::Red, 2.f);
 			return;
 		}
+
+		if (bConsumeKey)
+		{
+			Inventory->RemoveItem(RequiredItemID);
+		}
+		Unlock();
 	}
 
 	ToggleDoor();
 }
 
-void ADoorBase::Unlock()
+FText ADoorBase::GetPromptText() const
 {
-	if (!bLocked) return;
+	if (bLocked)
+	{
+		return FText::FromString(TEXT("잠겨 있음"));
+	}
+	return bIsOpen ? FText::FromString(TEXT("문 닫기")) : PromptText;
+}
 
-	bLocked = false;
-	OnUnlocked.Broadcast();
+void ADoorBase::Unlock(bool bAlsoOpen)
+{
+	if (bLocked)
+	{
+		bLocked = false;
+		OnUnlocked.Broadcast();
+	}
+
+	if (bAlsoOpen && !bIsOpen)
+	{
+		ToggleDoor();
+	}
 }
 
 void ADoorBase::ToggleDoor()

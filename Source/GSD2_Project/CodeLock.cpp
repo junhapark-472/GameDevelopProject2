@@ -1,10 +1,10 @@
 ﻿#include "CodeLock.h"
 #include "DoorBase.h"
-#include "Components/ChildActorComponent.h"
+#include "GSD2FunctionLibrary.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
-#include "Engine/Engine.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "UObject/ConstructorHelpers.h"
 
 // ---------------- ACodeDial ----------------
@@ -14,7 +14,7 @@ ACodeDial::ACodeDial()
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
-	// 기본 모양: 폭 12, 높이 18, 두께 6 인 블록 (앞면이 +X)
+	// 기본 모양: 엔진 기본 큐브로 만든 폭 12, 높이 18, 두께 6 블록 (앞면이 +X)
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(Root);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -33,6 +33,8 @@ ACodeDial::ACodeDial()
 	DigitText->SetTextRenderColor(FColor(255, 220, 0));
 	DigitText->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	DigitText->SetText(FText::FromString(TEXT("0")));
+
+	PromptText = FText::FromString(TEXT("숫자 돌리기"));
 }
 
 void ACodeDial::Interact_Implementation(AActor* Interactor)
@@ -62,7 +64,7 @@ ACodeLock::ACodeLock()
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
-	// 뒷판: 폭 64, 높이 26
+	// 뒷판: 엔진 기본 큐브로 만든 폭 64, 높이 26 판
 	Plate = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Plate"));
 	Plate->SetupAttachment(Root);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -72,32 +74,28 @@ ACodeLock::ACodeLock()
 	}
 	Plate->SetRelativeScale3D(FVector(0.04f, 0.64f, 0.26f));
 	Plate->SetRelativeLocation(FVector(-4.f, 0.f, 0.f));
-
-	// 다이얼 4개 (가로로 14cm 간격)
-	const int32 NumDials = 4;
-	const float Spacing = 14.f;
-	for (int32 i = 0; i < NumDials; ++i)
-	{
-		UChildActorComponent* DialComp = CreateDefaultSubobject<UChildActorComponent>(*FString::Printf(TEXT("Dial%d"), i + 1));
-		DialComp->SetupAttachment(Root);
-		DialComp->SetChildActorClass(ACodeDial::StaticClass());
-		// 앞(+X)에서 볼 때 왼쪽이 첫 번째 자리가 되도록 (+Y 쪽부터 배치)
-		DialComp->SetRelativeLocation(FVector(0.f, ((NumDials - 1) * 0.5f - i) * Spacing, 0.f));
-		DialComponents.Add(DialComp);
-	}
 }
 
 void ACodeLock::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Dials.Reset();
-	for (UChildActorComponent* DialComp : DialComponents)
+	// Code 자릿수만큼 다이얼 생성 (06강 SpawnActor)
+	// 앞(+X)에서 볼 때 왼쪽이 첫 번째 자리가 되도록 +Y 쪽부터 배치
+	const int32 NumDials = Code.Len();
+	for (int32 i = 0; i < NumDials; ++i)
 	{
-		if (ACodeDial* Dial = DialComp ? Cast<ACodeDial>(DialComp->GetChildActor()) : nullptr)
+		const FVector LocalOffset(0.f, ((NumDials - 1) * 0.5f - i) * DialSpacing, 0.f);
+		const FVector SpawnLocation = GetActorTransform().TransformPosition(LocalOffset);
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+
+		ACodeDial* Dial = GetWorld()->SpawnActor<ACodeDial>(ACodeDial::StaticClass(), SpawnLocation, GetActorRotation(), SpawnParams);
+		if (Dial)
 		{
+			Dial->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 			Dial->Lock = this;
-			Dial->SetDigit(0);
 			Dials.Add(Dial);
 		}
 	}
@@ -116,18 +114,11 @@ void ACodeLock::OnDialChanged()
 	if (Current != Code) return;
 
 	bSolved = true;
-	if (GEngine && !SolvedMessage.IsEmpty())
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, SolvedMessage);
-	}
+	UGSD2FunctionLibrary::ShowMessage(SolvedMessage, FLinearColor::Green);
 
 	if (DoorToUnlock)
 	{
-		DoorToUnlock->Unlock();
-		if (bOpenDoorOnSolved && !DoorToUnlock->bIsOpen)
-		{
-			DoorToUnlock->ToggleDoor();
-		}
+		DoorToUnlock->Unlock(bOpenDoorOnSolved);
 	}
 
 	OnOpened.Broadcast();

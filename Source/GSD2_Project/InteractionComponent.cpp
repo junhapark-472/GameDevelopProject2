@@ -1,4 +1,4 @@
-#include "InteractionComponent.h"
+﻿#include "InteractionComponent.h"
 #include "InteractableBase.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -11,11 +11,19 @@ UInteractionComponent::UInteractionComponent()
 
 void UInteractionComponent::TryInteract()
 {
+	if (AInteractableBase* Target = FindInteractable())
+	{
+		Target->Interact(GetOwner());
+	}
+}
+
+AInteractableBase* UInteractionComponent::FindInteractable() const
+{
 	APawn* Pawn = Cast<APawn>(GetOwner());
-	if (!Pawn) return;
+	if (!Pawn) return nullptr;
 
 	APlayerController* PC = Cast<APlayerController>(Pawn->GetController());
-	if (!PC || !PC->PlayerCameraManager) return;
+	if (!PC || !PC->PlayerCameraManager) return nullptr;
 
 	const FVector Start = PC->PlayerCameraManager->GetCameraLocation();
 	const FVector End = Start + PC->PlayerCameraManager->GetCameraRotation().Vector() * InteractDistance;
@@ -26,9 +34,7 @@ void UInteractionComponent::TryInteract()
 
 	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
 	{
-		if (AInteractableBase* Target = Cast<AInteractableBase>(Hit.GetActor()))
-		{
-			Target->Interact(Pawn);
-		}
+		return Cast<AInteractableBase>(Hit.GetActor());
 	}
+	return nullptr;
 }

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
@@ -7,7 +7,7 @@
 
 class UTexture2D;
 
-// µ¥ÀÌÅÍ Å×ÀÌºí ÇÑ ÁÙ = ¾ÆÀÌÅÛ 1°³ (Row Name = ¾ÆÀÌÅÛ ¾ÆÀÌµğ)
+// ë°ì´í„° í…Œì´ë¸” í•œ ì¤„ = ì•„ì´í…œ 1ê°œ (Row Name = ì•„ì´í…œ ì•„ì´ë””)
 
 USTRUCT(BlueprintType)
 struct FItemData : public FTableRowBase
@@ -24,7 +24,7 @@ struct FItemData : public FTableRowBase
 	TObjectPtr<UTexture2D> Icon = nullptr;
 };
 
-// °áÇÕ ±ÔÄ¢: ItemA + ItemB = Result (ºĞ¸®´Â °Å²Ü·Î)
+// ê²°í•© ê·œì¹™: ItemA + ItemB = Result (ë¶„ë¦¬ëŠ” ê±°ê¿€ë¡œ)
 
 USTRUCT(BlueprintType)
 struct FItemCombineRule
@@ -51,15 +51,15 @@ class GSD2_PROJECT_API UInventoryComponent : public UActorComponent
 public:
 	UInventoryComponent();
 
-	// ¾ÆÀÌÅÛ Á¤º¸
+	// ì•„ì´í…œ ì •ë³´
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TObjectPtr<UDataTable> ItemTable;
 
-	// °áÇÕ ±ÔÄ¢
+	// ê²°í•© ê·œì¹™
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TArray<FItemCombineRule> CombineRules;
 
-	// ÀÎº¥Åä¸®°¡ ¹Ù²î¸é È£ÃâµÊ (UI °»½Å¿ë)
+	// ì¸ë²¤í† ë¦¬ê°€ ë°”ë€Œë©´ í˜¸ì¶œë¨ (UI ê°±ì‹ ìš©)
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
 	FOnInventoryChanged OnInventoryChanged;
 

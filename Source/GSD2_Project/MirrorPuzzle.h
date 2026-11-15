@@ -45,10 +45,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mirror")
 	FString RevealMessage = TEXT("거울에 김이 서리면서 숫자가 떠올랐다.");
 
-	// 테스트용 이름표 (화면에 표시, 비우면 안 보임)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
-	FString DebugLabel = TEXT("거울 (수도꼭지를 틀면 숫자가 보임)");
-
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Mirror")
 	bool bRevealed = false;
 
@@ -81,10 +77,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Faucet")
 	FString AlreadyOnMessage = TEXT("물은 계속 흐르고 있다.");
-
-	// 테스트용 이름표 (화면에 표시, 비우면 안 보임)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
-	FString DebugLabel = TEXT("수도꼭지 [F: 물 틀기]");
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Faucet")
 	bool bTurnedOn = false;

@@ -29,6 +29,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Puzzle")
 	TObjectPtr<UStaticMeshComponent> Mesh;
 
+	// 자리 번호 표시 (테스트용, bShowLabel 로 끄기)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Puzzle")
 	TObjectPtr<UTextRenderComponent> Label;
 

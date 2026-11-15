@@ -7,13 +7,13 @@
 
 class ACodeLock;
 class ADoorBase;
-class UChildActorComponent;
 class UStaticMeshComponent;
 class UTextRenderComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCodeLockOpened);
 
 // 숫자 다이얼 1칸: F 를 누를 때마다 0 → 1 → ... → 9 → 0
+// CodeLock 이 게임 시작 시 자동으로 생성한다 (직접 배치하지 않음)
 UCLASS()
 class GSD2_PROJECT_API ACodeDial : public AInteractableBase
 {
@@ -41,7 +41,7 @@ private:
 };
 
 // 4자리 숫자 자물쇠 (일기장, 휴대폰 보관함 공용)
-// 다이얼 4개가 자동으로 붙어 있고, 숫자가 Code 와 같아지면 DoorToUnlock 을 풀고 연다
+// 게임 시작 시 다이얼을 Code 자릿수만큼 앞면(+X)에 생성하고, 숫자가 Code 와 같아지면 DoorToUnlock 을 푼다
 UCLASS()
 class GSD2_PROJECT_API ACodeLock : public AActor
 {
@@ -52,16 +52,13 @@ public:
 
 	virtual void BeginPlay() override;
 
-	// 다이얼이 바뀔 때 호출됨
+	// 다이얼 숫자가 바뀔 때마다 다이얼이 호출
 	void OnDialChanged();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CodeLock")
 	TObjectPtr<UStaticMeshComponent> Plate;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CodeLock")
-	TArray<TObjectPtr<UChildActorComponent>> DialComponents;
-
-	// 정답 4자리 (예: 일기장 0830, 휴대폰 보관함 = 거울 숫자)
+	// 정답 (예: 일기장 0830, 휴대폰 보관함 = 거울 숫자). 자릿수만큼 다이얼이 생긴다
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CodeLock")
 	FString Code = TEXT("4271");
 
@@ -75,9 +72,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CodeLock")
 	FString SolvedMessage = TEXT("딸깍. 자물쇠가 풀렸다.");
 
-	// 테스트용 이름표 (화면에 표시, 비우면 안 보임)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
-	FString DebugLabel = TEXT("숫자 자물쇠 [F: 칸마다 숫자 변경]");
+	// 다이얼 사이 간격
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CodeLock")
+	float DialSpacing = 14.f;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "CodeLock")
 	bool bSolved = false;

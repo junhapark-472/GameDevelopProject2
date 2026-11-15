@@ -1,11 +1,10 @@
 ﻿#include "PuzzleSlot.h"
 #include "PuzzleManager.h"
+#include "GSD2FunctionLibrary.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
 #include "UObject/ConstructorHelpers.h"
-#include "Kismet/GameplayStatics.h"
-#include "Camera/PlayerCameraManager.h"
 
 APuzzleSlot::APuzzleSlot()
 {
@@ -17,7 +16,7 @@ APuzzleSlot::APuzzleSlot()
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(Root);
 
-	// 기본 모양: 지름 50, 두께 2 인 납작한 원판
+	// 기본 모양: 엔진 기본 원기둥으로 만든 지름 50, 두께 2 원판
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylinderMesh(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
 	if (CylinderMesh.Succeeded())
 	{
@@ -34,20 +33,17 @@ APuzzleSlot::APuzzleSlot()
 	Label->SetTextRenderColor(FColor(0, 230, 255));
 	Label->SetRelativeLocation(FVector(0.f, 0.f, 95.f)); // 조각 이름표보다 위
 	Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	PromptText = FText::FromString(TEXT("여기에 놓기"));
 }
 
 void APuzzleSlot::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// 글씨가 항상 플레이어 카메라 쪽을 바라보게
-	if (Label && Label->IsVisible())
+	if (Label->IsVisible())
 	{
-		if (const APlayerCameraManager* Cam = UGameplayStatics::GetPlayerCameraManager(this, 0))
-		{
-			const FVector ToCam = Cam->GetCameraLocation() - Label->GetComponentLocation();
-			Label->SetWorldRotation(FRotator(0.f, ToCam.Rotation().Yaw, 0.f));
-		}
+		UGSD2FunctionLibrary::FaceCamera(this, Label);
 	}
 }
 
@@ -55,11 +51,8 @@ void APuzzleSlot::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	if (Label)
-	{
-		Label->SetText(FText::FromString(TEXT("#") + SlotName.ToString()));
-		Label->SetVisibility(bShowLabel && !SlotName.IsNone());
-	}
+	Label->SetText(FText::FromString(TEXT("#") + SlotName.ToString()));
+	Label->SetVisibility(bShowLabel && !SlotName.IsNone());
 }
 
 void APuzzleSlot::Interact_Implementation(AActor* Interactor)

@@ -31,6 +31,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Puzzle")
 	TObjectPtr<UStaticMeshComponent> Mesh;
 
+	// 조각 이름 표시 (테스트용, bShowLabel 로 끄기)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Puzzle")
 	TObjectPtr<UTextRenderComponent> Label;
 

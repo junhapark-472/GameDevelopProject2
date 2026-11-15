@@ -1,19 +1,11 @@
 ﻿#include "MirrorPuzzle.h"
+#include "GSD2FunctionLibrary.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
-#include "Engine/Engine.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
-
-static void ShowPuzzleMessage(const FString& Message, FColor Color = FColor::White)
-{
-	if (GEngine && !Message.IsEmpty())
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, Color, Message);
-	}
-}
 
 // ---------------- AFoggedMirror ----------------
 
@@ -24,7 +16,7 @@ AFoggedMirror::AFoggedMirror()
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
-	// 기본 모양: 폭 100, 높이 120, 두께 2 인 판 (앞면이 +X 방향)
+	// 기본 모양: 엔진 기본 큐브로 만든 폭 100, 높이 120, 두께 2 판 (앞면이 +X 방향)
 	MirrorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MirrorMesh"));
 	MirrorMesh->SetupAttachment(Root);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -49,24 +41,15 @@ void AFoggedMirror::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	if (CodeText)
-	{
-		CodeText->SetText(FText::FromString(Code));
-	}
+	CodeText->SetText(FText::FromString(Code));
 }
 
 void AFoggedMirror::Reveal()
 {
 	if (bRevealed || GetWorldTimerManager().IsTimerActive(RevealTimer)) return;
 
-	if (RevealDelay > 0.f)
-	{
-		GetWorldTimerManager().SetTimer(RevealTimer, this, &AFoggedMirror::FinishReveal, RevealDelay, false);
-	}
-	else
-	{
-		FinishReveal();
-	}
+	// 김이 서리는 시간만큼 기다렸다가 숫자 표시 (06강 타이머)
+	GetWorldTimerManager().SetTimer(RevealTimer, this, &AFoggedMirror::FinishReveal, FMath::Max(RevealDelay, 0.01f), false);
 }
 
 void AFoggedMirror::FinishReveal()
@@ -80,35 +63,40 @@ void AFoggedMirror::FinishReveal()
 	CodeText->SetText(FText::FromString(Code));
 	CodeText->SetHiddenInGame(false);
 
-	ShowPuzzleMessage(RevealMessage, FColor(180, 220, 255));
+	UGSD2FunctionLibrary::ShowMessage(RevealMessage, FLinearColor(0.7f, 0.85f, 1.f));
 }
 
 // ---------------- AFaucet ----------------
 
 AFaucet::AFaucet()
 {
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	RootComponent = Mesh;
+	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	RootComponent = Root;
 
-	// 기본 모양: 지름 10, 높이 20 인 원기둥
+	// 기본 모양: 엔진 기본 원기둥으로 만든 지름 30, 높이 50 (수도꼭지 대용). 바닥이 액터 위치에 오도록 올림
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	Mesh->SetupAttachment(Root);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylinderMesh(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
 	if (CylinderMesh.Succeeded())
 	{
 		Mesh->SetStaticMesh(CylinderMesh.Object);
 	}
-	Mesh->SetRelativeScale3D(FVector(0.1f, 0.1f, 0.2f));
+	Mesh->SetRelativeScale3D(FVector(0.3f, 0.3f, 0.5f));
+	Mesh->SetRelativeLocation(FVector(0.f, 0.f, 25.f));
+
+	PromptText = FText::FromString(TEXT("수도꼭지 틀기"));
 }
 
 void AFaucet::Interact_Implementation(AActor* Interactor)
 {
 	if (bTurnedOn)
 	{
-		ShowPuzzleMessage(AlreadyOnMessage);
+		UGSD2FunctionLibrary::ShowMessage(AlreadyOnMessage);
 		return;
 	}
 
 	bTurnedOn = true;
-	ShowPuzzleMessage(TurnOnMessage);
+	UGSD2FunctionLibrary::ShowMessage(TurnOnMessage);
 
 	if (Mirror)
 	{

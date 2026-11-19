@@ -1,20 +1,23 @@
-# Escape room environment delivery
+# Escape room environment delivery — revised scene
 
 Open `/Game/OutsourceEnv/L_EscapeRoom` in Unreal Engine 5.8.4.
 
-This folder contains the editable four-room escape room environment: 1 map,
-640 static meshes, 426 materials, and 1178 textures. The scene contains 1029
-editor actors. All game-content dependencies are contained in this folder.
-The full roof is included, and key scene props remain separate actors.
+This revision replaces the earlier escape room scene with the user's saved
+`EscapeRoom_ClosedDoor_CenteredPivots_PBR` level. The existing map entry remains
+unchanged; models, materials and textures belong to the new revision.
 
-The map has no GameMode Override, so it inherits the shared project's existing
-first-person setup. Puzzle interactions are left for the shared project's
-interaction system. Existing code, characters, input, project settings, and
-other members' assets are unchanged by this delivery.
+Contents: 1 map, 425 static meshes,
+425 materials/material instances, 1250 textures;
+430 scene actors. Assets are under
+`/Game/OutsourceEnv/model/EscapeRoom_ClosedDoor_CenteredPivots_PBR`.
 
-Validation: the map was loaded in a clean UE 5.8.4 project containing only this
-folder; actor identities and transforms matched the saved source scene, and
-no missing or external `/Game` package dependencies were found. This was an
-editor-load validation, not a gameplay test of the shared C++ project.
+Validation: loaded in an isolated UE 5.8.4 project containing only this folder.
+Actor identities, transforms and mesh references matched the saved source
+after package relocation. All game-content dependencies are present in this
+folder. No GameMode Override is set. The shared project's gameplay and
+interactions were not tested by this delivery.
 
-Texture source details and CC0 credits are in [Texture_Credits.md](Texture_Credits.md).
+The local source project is unchanged. This commit only updates `Content/OutsourceEnv`.
+The earlier version remains available in Git history (commit `2f90a97`).
+`Texture_Credits.md` is retained as the earlier delivery's source record;
+new texture provenance was not independently established in this upload.

@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 
 #include "GSD2_ProjectPlayerController.h"
@@ -9,6 +9,8 @@
 #include "Blueprint/UserWidget.h"
 #include "GSD2_Project.h"
 #include "Widgets/Input/SVirtualJoystick.h"
+#include "GameHUDWidget.h"
+#include "InteractionComponent.h"
 
 AGSD2_ProjectPlayerController::AGSD2_ProjectPlayerController()
 {
@@ -19,6 +21,16 @@ AGSD2_ProjectPlayerController::AGSD2_ProjectPlayerController()
 void AGSD2_ProjectPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 게임 화면 HUD (조준점, 상호작용 안내) 생성
+	if (IsLocalPlayerController() && BP_HUDWidget)
+	{
+		HUDWidget = CreateWidget<UGameHUDWidget>(this, BP_HUDWidget);
+		if (HUDWidget)
+		{
+			HUDWidget->AddToViewport();
+		}
+	}
 
 	
 	// only spawn touch controls on local player controllers
@@ -39,6 +51,18 @@ void AGSD2_ProjectPlayerController::BeginPlay()
 		}
 
 	}
+}
+
+void AGSD2_ProjectPlayerController::PlayerTick(float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+
+	if (!HUDWidget) return;
+
+	// 캐릭터의 InteractionComponent 로 지금 바라보는 대상을 찾아 HUD 에 전달
+	const APawn* ControlledPawn = GetPawn();
+	const UInteractionComponent* Interaction = ControlledPawn ? ControlledPawn->FindComponentByClass<UInteractionComponent>() : nullptr;
+	HUDWidget->UpdateInteractPrompt(Interaction ? Interaction->FindInteractable() : nullptr);
 }
 
 void AGSD2_ProjectPlayerController::SetupInputComponent()

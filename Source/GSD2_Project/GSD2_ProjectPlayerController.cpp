@@ -13,6 +13,7 @@
 #include "InteractionComponent.h"
 #include "InspectStation.h"
 #include "Components/InputComponent.h"
+#include "GameFramework/Pawn.h"
 
 AGSD2_ProjectPlayerController::AGSD2_ProjectPlayerController()
 {
@@ -125,6 +126,12 @@ void AGSD2_ProjectPlayerController::StartInspection(AInspectStation* Station)
 	SetIgnoreLookInput(true);
 	bShowMouseCursor = true;
 
+	// 조사 카메라에 내 캐릭터 몸이 가리지 않도록 잠시 숨김
+	if (APawn* MyPawn = GetPawn())
+	{
+		MyPawn->SetActorHiddenInGame(true);
+	}
+
 	FInputModeGameAndUI InputMode;
 	InputMode.SetHideCursorDuringCapture(false);
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
@@ -146,6 +153,11 @@ void AGSD2_ProjectPlayerController::EndInspection()
 	ResetIgnoreLookInput();
 	bShowMouseCursor = false;
 	SetInputMode(FInputModeGameOnly());
+
+	if (APawn* MyPawn = GetPawn())
+	{
+		MyPawn->SetActorHiddenInGame(false);
+	}
 
 	Station->OnInspectEnd();
 }

@@ -133,6 +133,8 @@ void ACodeLock::BeginPlay()
 		ACodeDial* Dial = GetWorld()->SpawnActor<ACodeDial>(ACodeDial::StaticClass(), SpawnLocation, GetActorRotation(), SpawnParams);
 		if (Dial)
 		{
+			// 자물쇠 크기를 줄여 배치해도 다이얼이 같은 비율이 되도록 크기도 맞춤
+			Dial->SetActorScale3D(GetActorScale3D());
 			Dial->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 			Dial->Lock = this;
 			Dials.Add(Dial);

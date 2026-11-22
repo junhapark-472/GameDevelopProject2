@@ -7,8 +7,7 @@
 
 class UTexture2D;
 
-// 데이터 테이블 한 줄 = 아이템 1개 (Row Name = 아이템 아이디)
-
+// 데이터 테이블 한 줄 = 아이템 하나 (Row Name이 아이템 ID)
 USTRUCT(BlueprintType)
 struct FItemData : public FTableRowBase
 {
@@ -24,8 +23,7 @@ struct FItemData : public FTableRowBase
 	TObjectPtr<UTexture2D> Icon = nullptr;
 };
 
-// 결합 규칙: ItemA + ItemB = Result (분리는 거꿀로)
-
+// 결합 규칙: ItemA + ItemB = Result (분리는 반대로)
 USTRUCT(BlueprintType)
 struct FItemCombineRule
 {
@@ -41,8 +39,6 @@ struct FItemCombineRule
 	FName Result;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryChanged);
-
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class GSD2_PROJECT_API UInventoryComponent : public UActorComponent
 {
@@ -51,17 +47,17 @@ class GSD2_PROJECT_API UInventoryComponent : public UActorComponent
 public:
 	UInventoryComponent();
 
-	// 아이템 정보
+protected:
+	virtual void BeginPlay() override;
+
+public:
+	// 아이템 정보 표 (DT_Items)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TObjectPtr<UDataTable> ItemTable;
 
-	// 결합 규칙
+	// 결합 규칙 목록
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TArray<FItemCombineRule> CombineRules;
-
-	// 인벤토리가 바뀌면 호출됨 (UI 갱신용)
-	UPROPERTY(BlueprintAssignable, Category = "Inventory")
-	FOnInventoryChanged OnInventoryChanged;
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool AddItem(FName ItemID);
@@ -96,4 +92,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Inventory")
 	FName SelectedItem;
+
+	// 아이템 목록을 GameInstance에 저장 (레벨이 바뀌어도 유지)
+	void SaveToProgress();
 };

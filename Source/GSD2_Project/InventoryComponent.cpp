@@ -1,19 +1,37 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "InventoryComponent.h"
+#include "GSD2GameInstance.h"
 
 UInventoryComponent::UInventoryComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+void UInventoryComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// 레벨이 바뀌어 캐릭터가 새로 생겨도 GameInstance에 저장된 아이템을 불러온다
+	if (UGSD2GameInstance* GI = Cast<UGSD2GameInstance>(GetWorld()->GetGameInstance()))
+	{
+		Items = GI->SavedItems;
+	}
+}
+
+void UInventoryComponent::SaveToProgress()
+{
+	if (UGSD2GameInstance* GI = Cast<UGSD2GameInstance>(GetWorld()->GetGameInstance()))
+	{
+		GI->SavedItems = Items;
+	}
+}
+
 bool UInventoryComponent::AddItem(FName ItemID)
 {
-	// 중복 획득 방지용
+	// 이 게임의 아이템은 전부 하나씩만 있으므로 중복 획득은 막는다
 	if (ItemID.IsNone() || Items.Contains(ItemID)) return false;
 
 	Items.Add(ItemID);
-	OnInventoryChanged.Broadcast();
+	SaveToProgress();
 	return true;
 }
 
@@ -22,7 +40,7 @@ bool UInventoryComponent::RemoveItem(FName ItemID)
 	if (Items.Remove(ItemID) == 0) return false;
 
 	if (SelectedItem == ItemID) SelectedItem = NAME_None;
-	OnInventoryChanged.Broadcast();
+	SaveToProgress();
 	return true;
 }
 
@@ -62,7 +80,7 @@ bool UInventoryComponent::CombineItems(FName ItemA, FName ItemB)
 			Items.Remove(ItemB);
 			Items.AddUnique(Rule.Result);
 			SelectedItem = NAME_None;
-			OnInventoryChanged.Broadcast();
+			SaveToProgress();
 			return true;
 		}
 	}
@@ -81,7 +99,7 @@ bool UInventoryComponent::SplitItem(FName CombinedItem)
 			Items.AddUnique(Rule.ItemA);
 			Items.AddUnique(Rule.ItemB);
 			SelectedItem = NAME_None;
-			OnInventoryChanged.Broadcast();
+			SaveToProgress();
 			return true;
 		}
 	}

@@ -140,6 +140,46 @@ void ACodeLock::BeginPlay()
 			Dials.Add(Dial);
 		}
 	}
+
+	if (bShowOnlyWhenInspecting)
+	{
+		SetLockVisible(false);
+	}
+}
+
+void ACodeLock::OnInspectStart()
+{
+	Super::OnInspectStart();
+
+	if (bShowOnlyWhenInspecting)
+	{
+		SetLockVisible(true);
+	}
+}
+
+void ACodeLock::OnInspectEnd()
+{
+	Super::OnInspectEnd();
+
+	if (bShowOnlyWhenInspecting)
+	{
+		SetLockVisible(false);
+	}
+}
+
+void ACodeLock::SetLockVisible(bool bVisible)
+{
+	Plate->SetVisibility(bVisible);
+	ConfirmButton->SetVisibility(bVisible);
+	ConfirmText->SetVisibility(bVisible);
+
+	for (ACodeDial* Dial : Dials)
+	{
+		if (Dial)
+		{
+			Dial->SetActorHiddenInGame(!bVisible);
+		}
+	}
 }
 
 void ACodeLock::HandleInspectClick(const FHitResult& Hit)

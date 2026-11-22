@@ -59,6 +59,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
 	float OpenSpeed = 4.f;
 
+	// true 면 회전하지 않고 SlideOffset 만큼 밀려 나온다 (서랍용)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
+	bool bSlide = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door", meta = (EditCondition = "bSlide"))
+	FVector SlideOffset = FVector(0.f, 30.f, 0.f);
+
+	// 열려 있을 때 표시할 문구
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
+	FText ClosePromptText;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
 	FString LockedMessage = TEXT("잠겨 있다.");
 
@@ -69,5 +80,6 @@ public:
 	FOnDoorUnlocked OnUnlocked;
 
 private:
-	float CurrentAngle = 0.f;
+	// 0 = 닫힘, 1 = 열림
+	float OpenAlpha = 0.f;
 };

@@ -29,18 +29,27 @@ ADoorBase::ADoorBase()
 	DoorMesh->SetRelativeScale3D(FVector(0.1f, 1.f, 2.f));
 
 	PromptText = FText::FromString(TEXT("문 열기"));
+	ClosePromptText = FText::FromString(TEXT("문 닫기"));
 }
 
 void ADoorBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// 목표 각도까지 부드럽게 회전
-	const float TargetAngle = bIsOpen ? OpenAngle : 0.f;
-	if (!FMath::IsNearlyEqual(CurrentAngle, TargetAngle, 0.01f))
+	// 열림 정도(0~1)를 부드럽게 바꾸고, 그만큼 회전하거나 밀려 나온다
+	const float TargetAlpha = bIsOpen ? 1.f : 0.f;
+	if (!FMath::IsNearlyEqual(OpenAlpha, TargetAlpha, 0.001f))
 	{
-		CurrentAngle = FMath::FInterpTo(CurrentAngle, TargetAngle, DeltaTime, OpenSpeed);
-		Hinge->SetRelativeRotation(FRotator(0.f, CurrentAngle, 0.f));
+		OpenAlpha = FMath::FInterpTo(OpenAlpha, TargetAlpha, DeltaTime, OpenSpeed);
+
+		if (bSlide)
+		{
+			Hinge->SetRelativeLocation(SlideOffset * OpenAlpha);
+		}
+		else
+		{
+			Hinge->SetRelativeRotation(FRotator(0.f, OpenAngle * OpenAlpha, 0.f));
+		}
 	}
 }
 
@@ -73,7 +82,7 @@ FText ADoorBase::GetPromptText() const
 	{
 		return FText::FromString(TEXT("잠겨 있음"));
 	}
-	return bIsOpen ? FText::FromString(TEXT("문 닫기")) : PromptText;
+	return bIsOpen ? ClosePromptText : PromptText;
 }
 
 void ADoorBase::Unlock(bool bAlsoOpen)

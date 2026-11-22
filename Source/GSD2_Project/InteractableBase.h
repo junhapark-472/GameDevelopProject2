@@ -12,6 +12,8 @@ class GSD2_PROJECT_API AInteractableBase : public AActor
 public:
 	AInteractableBase();
 
+	virtual void BeginPlay() override;
+
 	// 블루프린트에서 가져가서 오브젝트 상호작용 제작
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
@@ -24,4 +26,9 @@ public:
 
 	// 화면에 표시할 문구 (상태에 따라 바꾸고 싶으면 자식 클래스에서 재정의)
 	virtual FText GetPromptText() const;
+
+	// 맵에 원래 놓여 있던 장식용 액터의 이름 (예: StaticMeshActor_599)
+	// 게임이 시작되면 이 액터들을 숨기고, 이 오브젝트가 같은 모델로 대신 보여준다
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	TArray<FName> ReplacedActorNames;
 };

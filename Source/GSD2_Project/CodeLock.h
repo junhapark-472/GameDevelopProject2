@@ -63,6 +63,8 @@ public:
 	virtual void BeginPlay() override;
 	virtual bool CanInspect() const override { return !bSolved; }
 	virtual void HandleInspectClick(const FHitResult& Hit) override;
+	virtual void OnInspectStart() override;
+	virtual void OnInspectEnd() override;
 
 	// 지금 다이얼 숫자로 열기 시도
 	void TryOpen();
@@ -104,6 +106,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CodeLock|Progress")
 	FText NextHint;
 
+	// true 면 평소에는 숨겨 두고 조사 화면에서만 보인다 (맵에 자물쇠 모델이 따로 있을 때)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CodeLock")
+	bool bShowOnlyWhenInspecting = false;
+
 	// 다이얼 사이 간격
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CodeLock")
 	float DialSpacing = 14.f;
@@ -115,6 +121,8 @@ public:
 	FOnCodeLockOpened OnOpened;
 
 private:
+	void SetLockVisible(bool bVisible);
+
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ACodeDial>> Dials;
 };

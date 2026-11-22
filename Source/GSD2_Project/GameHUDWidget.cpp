@@ -4,10 +4,12 @@
 
 void UGameHUDWidget::UpdateInteractPrompt(const AInteractableBase* Target)
 {
-	if (Target)
+	const FText Prompt = Target ? Target->GetPromptText() : FText::GetEmpty();
+
+	if (!Prompt.IsEmpty())
 	{
 		CrosshairText->SetColorAndOpacity(FSlateColor(FLinearColor(0.2f, 1.f, 0.3f)));
-		InteractPromptText->SetText(FText::Format(FText::FromString(TEXT("F - {0}")), Target->GetPromptText()));
+		InteractPromptText->SetText(FText::Format(FText::FromString(TEXT("[F] {0}")), Prompt));
 		InteractPromptText->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
 	else

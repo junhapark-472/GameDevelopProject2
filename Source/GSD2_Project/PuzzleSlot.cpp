@@ -34,7 +34,6 @@ APuzzleSlot::APuzzleSlot()
 	Label->SetRelativeLocation(FVector(0.f, 0.f, 95.f)); // 조각 이름표보다 위
 	Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	PromptText = FText::FromString(TEXT("여기에 놓기"));
 }
 
 void APuzzleSlot::Tick(float DeltaTime)
@@ -57,10 +56,16 @@ void APuzzleSlot::OnConstruction(const FTransform& Transform)
 
 void APuzzleSlot::Interact_Implementation(AActor* Interactor)
 {
+	// 1인칭에서 F 를 누르면 퍼즐 화면을 연다 (배치는 퍼즐 화면에서 마우스로)
 	if (Manager)
 	{
-		Manager->PlaceSelectedOn(this);
+		Manager->Interact(Interactor);
 	}
+}
+
+FText APuzzleSlot::GetPromptText() const
+{
+	return Manager ? Manager->GetPromptText() : FText::GetEmpty();
 }
 
 FVector APuzzleSlot::GetPlaceLocation() const

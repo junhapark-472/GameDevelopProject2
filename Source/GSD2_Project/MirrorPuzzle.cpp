@@ -1,5 +1,7 @@
 ﻿#include "MirrorPuzzle.h"
 #include "GSD2FunctionLibrary.h"
+#include "Camera/CameraComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
@@ -11,11 +13,6 @@
 
 AFoggedMirror::AFoggedMirror()
 {
-	PrimaryActorTick.bCanEverTick = false;
-
-	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Root;
-
 	// 기본 모양: 엔진 기본 큐브로 만든 폭 100, 높이 120, 두께 2 판 (앞면이 +X 방향)
 	MirrorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MirrorMesh"));
 	MirrorMesh->SetupAttachment(Root);
@@ -35,6 +32,14 @@ AFoggedMirror::AFoggedMirror()
 	CodeText->SetTextRenderColor(FColor(230, 240, 255));
 	CodeText->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CodeText->SetHiddenInGame(true);
+
+	// 조사 범위는 거울 앞면, 조사 화면은 거울 정면에서 확대
+	InteractBox->SetBoxExtent(FVector(10.f, 50.f, 60.f));
+	InteractBox->SetRelativeLocation(FVector(10.f, 0.f, 0.f));
+	InspectCamera->SetRelativeLocation(FVector(90.f, 0.f, 0.f));
+	InspectCamera->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
+
+	PromptText = FText::FromString(TEXT("거울 조사하기"));
 }
 
 void AFoggedMirror::OnConstruction(const FTransform& Transform)
@@ -89,6 +94,9 @@ AFaucet::AFaucet()
 
 void AFaucet::Interact_Implementation(AActor* Interactor)
 {
+	// 배수구 조사 전에는 반응하지 않는다
+	if (!UGSD2FunctionLibrary::HasProgressFlag(this, RequiredFlag)) return;
+
 	if (bTurnedOn)
 	{
 		UGSD2FunctionLibrary::ShowMessage(AlreadyOnMessage);
@@ -102,4 +110,10 @@ void AFaucet::Interact_Implementation(AActor* Interactor)
 	{
 		Mirror->Reveal();
 	}
+}
+
+FText AFaucet::GetPromptText() const
+{
+	// 조건을 만족하기 전에는 안내 문구를 띄우지 않는다
+	return UGSD2FunctionLibrary::HasProgressFlag(this, RequiredFlag) ? PromptText : FText::GetEmpty();
 }

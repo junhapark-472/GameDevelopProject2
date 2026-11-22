@@ -1,6 +1,8 @@
 ﻿#include "CodeLock.h"
 #include "DoorBase.h"
 #include "GSD2FunctionLibrary.h"
+#include "Camera/CameraComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
@@ -14,15 +16,30 @@ ACodeDial::ACodeDial()
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
-	// 기본 모양: 엔진 기본 큐브로 만든 폭 12, 높이 18, 두께 6 블록 (앞면이 +X)
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
+
+	// 숫자 칸: 엔진 기본 큐브로 만든 폭 12, 높이 18, 두께 6 블록 (앞면이 +X)
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(Root);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
+	Mesh->SetRelativeScale3D(FVector(0.06f, 0.12f, 0.18f));
+
+	// 위/아래 버튼: 숫자 칸 위아래의 작은 블록
+	UpButton = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("UpButton"));
+	UpButton->SetupAttachment(Root);
+	UpButton->SetRelativeLocation(FVector(0.f, 0.f, 14.f));
+	UpButton->SetRelativeScale3D(FVector(0.05f, 0.1f, 0.06f));
+
+	DownButton = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DownButton"));
+	DownButton->SetupAttachment(Root);
+	DownButton->SetRelativeLocation(FVector(0.f, 0.f, -14.f));
+	DownButton->SetRelativeScale3D(FVector(0.05f, 0.1f, 0.06f));
+
 	if (CubeMesh.Succeeded())
 	{
 		Mesh->SetStaticMesh(CubeMesh.Object);
+		UpButton->SetStaticMesh(CubeMesh.Object);
+		DownButton->SetStaticMesh(CubeMesh.Object);
 	}
-	Mesh->SetRelativeScale3D(FVector(0.06f, 0.12f, 0.18f));
 
 	DigitText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("DigitText"));
 	DigitText->SetupAttachment(Root);
@@ -33,25 +50,24 @@ ACodeDial::ACodeDial()
 	DigitText->SetTextRenderColor(FColor(255, 220, 0));
 	DigitText->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	DigitText->SetText(FText::FromString(TEXT("0")));
-
-	PromptText = FText::FromString(TEXT("숫자 돌리기"));
 }
 
 void ACodeDial::Interact_Implementation(AActor* Interactor)
 {
-	if (Lock && Lock->bSolved) return;
-
-	SetDigit((Digit + 1) % 10);
-
 	if (Lock)
 	{
-		Lock->OnDialChanged();
+		Lock->Interact(Interactor);
 	}
 }
 
-void ACodeDial::SetDigit(int32 NewDigit)
+FText ACodeDial::GetPromptText() const
 {
-	Digit = FMath::Clamp(NewDigit, 0, 9);
+	return Lock ? Lock->GetPromptText() : FText::GetEmpty();
+}
+
+void ACodeDial::ChangeDigit(int32 Amount)
+{
+	Digit = ((Digit + Amount) % 10 + 10) % 10;
 	DigitText->SetText(FText::AsNumber(Digit));
 }
 
@@ -59,21 +75,44 @@ void ACodeDial::SetDigit(int32 NewDigit)
 
 ACodeLock::ACodeLock()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
 
-	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Root;
-
-	// 뒷판: 엔진 기본 큐브로 만든 폭 64, 높이 26 판
+	// 뒷판: 엔진 기본 큐브로 만든 폭 90, 높이 50 판
 	Plate = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Plate"));
 	Plate->SetupAttachment(Root);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
+	Plate->SetRelativeScale3D(FVector(0.04f, 0.9f, 0.5f));
+	Plate->SetRelativeLocation(FVector(-4.f, 0.f, 0.f));
+
+	// 확인 버튼: 다이얼 오른쪽 (앞에서 볼 때)
+	ConfirmButton = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ConfirmButton"));
+	ConfirmButton->SetupAttachment(Root);
+	ConfirmButton->SetRelativeLocation(FVector(0.f, -36.f, 0.f));
+	ConfirmButton->SetRelativeScale3D(FVector(0.06f, 0.12f, 0.12f));
+
 	if (CubeMesh.Succeeded())
 	{
 		Plate->SetStaticMesh(CubeMesh.Object);
+		ConfirmButton->SetStaticMesh(CubeMesh.Object);
 	}
-	Plate->SetRelativeScale3D(FVector(0.04f, 0.64f, 0.26f));
-	Plate->SetRelativeLocation(FVector(-4.f, 0.f, 0.f));
+
+	ConfirmText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("ConfirmText"));
+	ConfirmText->SetupAttachment(ConfirmButton);
+	ConfirmText->SetAbsolute(false, false, true);
+	ConfirmText->SetRelativeLocation(FVector(60.f, 0.f, 0.f));
+	ConfirmText->SetHorizontalAlignment(EHTA_Center);
+	ConfirmText->SetVerticalAlignment(EVRTA_TextCenter);
+	ConfirmText->SetWorldSize(8.f);
+	ConfirmText->SetTextRenderColor(FColor(120, 255, 120));
+	ConfirmText->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ConfirmText->SetText(FText::FromString(TEXT("OK")));
+
+	// 조사 범위는 자물쇠 앞면, 잠금장치 화면은 정면에서 확대
+	InteractBox->SetBoxExtent(FVector(10.f, 46.f, 26.f));
+	InteractBox->SetRelativeLocation(FVector(6.f, 0.f, 0.f));
+	InspectCamera->SetRelativeLocation(FVector(75.f, 0.f, 0.f));
+	InspectCamera->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
+
+	PromptText = FText::FromString(TEXT("잠금장치 조사하기"));
 }
 
 void ACodeLock::BeginPlay()
@@ -85,7 +124,7 @@ void ACodeLock::BeginPlay()
 	const int32 NumDials = Code.Len();
 	for (int32 i = 0; i < NumDials; ++i)
 	{
-		const FVector LocalOffset(0.f, ((NumDials - 1) * 0.5f - i) * DialSpacing, 0.f);
+		const FVector LocalOffset(0.f, ((NumDials - 1) * 0.5f - i) * DialSpacing + 6.f, 0.f);
 		const FVector SpawnLocation = GetActorTransform().TransformPosition(LocalOffset);
 
 		FActorSpawnParameters SpawnParams;
@@ -101,7 +140,24 @@ void ACodeLock::BeginPlay()
 	}
 }
 
-void ACodeLock::OnDialChanged()
+void ACodeLock::HandleInspectClick(const FHitResult& Hit)
+{
+	if (bSolved) return;
+
+	if (Hit.GetComponent() == ConfirmButton)
+	{
+		TryOpen();
+		return;
+	}
+
+	if (ACodeDial* Dial = Cast<ACodeDial>(Hit.GetActor()))
+	{
+		// 아래 버튼은 -1, 위 버튼이나 숫자 칸은 +1
+		Dial->ChangeDigit(Hit.GetComponent() == Dial->DownButton ? -1 : 1);
+	}
+}
+
+void ACodeLock::TryOpen()
 {
 	if (bSolved) return;
 
@@ -111,7 +167,11 @@ void ACodeLock::OnDialChanged()
 		Current.AppendInt(Dial->GetDigit());
 	}
 
-	if (Current != Code) return;
+	if (Current != Code)
+	{
+		UGSD2FunctionLibrary::ShowMessage(WrongMessage, FLinearColor(1.f, 0.4f, 0.4f), 2.f);
+		return;
+	}
 
 	bSolved = true;
 	UGSD2FunctionLibrary::ShowMessage(SolvedMessage, FLinearColor::Green);
@@ -120,6 +180,9 @@ void ACodeLock::OnDialChanged()
 	{
 		DoorToUnlock->Unlock(bOpenDoorOnSolved);
 	}
+
+	UGSD2FunctionLibrary::SetProgressFlag(this, SolvedFlag);
+	UGSD2FunctionLibrary::UpdateObjectiveAndHint(this, NextObjective, NextHint);
 
 	OnOpened.Broadcast();
 }

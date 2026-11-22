@@ -8,7 +8,7 @@ class AInteractableBase;
 class UTextBlock;
 
 // 게임 화면 HUD (08강 UMG). 위젯 블루프린트 WBP_HUD 의 부모 클래스
-// - 화면 가운데 조준점(+), 상호작용 가능한 대상을 보고 있으면 "F - 행동" 표시
+// - 화면 가운데 조준점(+), 상호작용 가능한 대상을 보고 있으면 "[F] 행동" 표시
 UCLASS()
 class GSD2_PROJECT_API UGameHUDWidget : public UUserWidget
 {

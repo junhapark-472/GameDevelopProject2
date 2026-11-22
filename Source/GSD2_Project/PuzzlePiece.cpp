@@ -35,7 +35,6 @@ APuzzlePiece::APuzzlePiece()
 	Label->SetRelativeLocation(FVector(0.f, 0.f, 58.f));
 	Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	PromptText = FText::FromString(TEXT("집기"));
 }
 
 void APuzzlePiece::BeginPlay()
@@ -60,16 +59,22 @@ void APuzzlePiece::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	Label->SetText(FText::FromName(PieceID));
+	Label->SetText(DisplayName.IsEmpty() ? FText::FromName(PieceID) : DisplayName);
 	Label->SetVisibility(bShowLabel && !PieceID.IsNone());
 }
 
 void APuzzlePiece::Interact_Implementation(AActor* Interactor)
 {
+	// 1인칭에서 F 를 누르면 퍼즐 화면을 연다 (선택은 퍼즐 화면에서 마우스로)
 	if (Manager)
 	{
-		Manager->SelectPiece(this);
+		Manager->Interact(Interactor);
 	}
+}
+
+FText APuzzlePiece::GetPromptText() const
+{
+	return Manager ? Manager->GetPromptText() : FText::GetEmpty();
 }
 
 void APuzzlePiece::SetSelected(bool bSelected)

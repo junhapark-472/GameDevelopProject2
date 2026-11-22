@@ -9,6 +9,7 @@
 class UInputMappingContext;
 class UUserWidget;
 class UGameHUDWidget;
+class AInspectStation;
 
 /**
  *  Simple first person Player Controller
@@ -24,6 +25,15 @@ public:
 
 	/** Constructor */
 	AGSD2_ProjectPlayerController();
+
+	/** 조사 시점 시작: 해당 오브젝트 카메라로 전환하고 마우스 커서 표시 */
+	void StartInspection(AInspectStation* Station);
+
+	/** 조사 시점 종료: 1인칭 시점으로 복귀 */
+	void EndInspection();
+
+	/** 조사 화면이 열려 있는지 */
+	bool IsInspecting() const { return CurrentStation != nullptr; }
 
 protected:
 
@@ -60,6 +70,16 @@ protected:
 
 	/** 매 프레임: 조준 중인 상호작용 대상을 HUD 에 표시 */
 	virtual void PlayerTick(float DeltaTime) override;
+
+	/** 조사 화면에서 마우스 왼쪽 클릭 */
+	void OnInspectClick();
+
+	/** 조사 화면에서 ESC / 마우스 오른쪽 */
+	void OnInspectExit();
+
+	/** 지금 조사 중인 오브젝트 */
+	UPROPERTY()
+	TObjectPtr<AInspectStation> CurrentStation;
 
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;

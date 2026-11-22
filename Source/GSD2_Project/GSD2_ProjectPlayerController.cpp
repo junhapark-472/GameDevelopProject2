@@ -11,6 +11,8 @@
 #include "Widgets/Input/SVirtualJoystick.h"
 #include "GameHUDWidget.h"
 #include "InteractionComponent.h"
+#include "InspectStation.h"
+#include "Components/InputComponent.h"
 
 AGSD2_ProjectPlayerController::AGSD2_ProjectPlayerController()
 {
@@ -59,6 +61,10 @@ void AGSD2_ProjectPlayerController::PlayerTick(float DeltaTime)
 
 	if (!HUDWidget) return;
 
+	// 조사 화면 중에는 조준점/안내 문구를 숨긴다
+	HUDWidget->SetVisibility(IsInspecting() ? ESlateVisibility::Hidden : ESlateVisibility::HitTestInvisible);
+	if (IsInspecting()) return;
+
 	// 캐릭터의 InteractionComponent 로 지금 바라보는 대상을 찾아 HUD 에 전달
 	const APawn* ControlledPawn = GetPawn();
 	const UInteractionComponent* Interaction = ControlledPawn ? ControlledPawn->FindComponentByClass<UInteractionComponent>() : nullptr;
@@ -68,6 +74,14 @@ void AGSD2_ProjectPlayerController::PlayerTick(float DeltaTime)
 void AGSD2_ProjectPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
+
+	// 조사 화면 조작 (04강 키 입력 바인딩). 다른 입력을 막지 않도록 bConsumeInput = false
+	if (InputComponent)
+	{
+		InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &AGSD2_ProjectPlayerController::OnInspectClick).bConsumeInput = false;
+		InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &AGSD2_ProjectPlayerController::OnInspectExit).bConsumeInput = false;
+		InputComponent->BindKey(EKeys::RightMouseButton, IE_Pressed, this, &AGSD2_ProjectPlayerController::OnInspectExit).bConsumeInput = false;
+	}
 
 	// only add IMCs for local player controllers
 	if (IsLocalPlayerController())
@@ -97,4 +111,61 @@ bool AGSD2_ProjectPlayerController::ShouldUseTouchControls() const
 {
 	// are we on a mobile platform? Should we force touch?
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
+}
+
+void AGSD2_ProjectPlayerController::StartInspection(AInspectStation* Station)
+{
+	if (!Station || CurrentStation) return;
+
+	CurrentStation = Station;
+
+	// 오브젝트의 카메라로 시점 전환 + 이동/시점 회전 막기 + 마우스 커서 표시
+	SetViewTargetWithBlend(Station, Station->BlendTime);
+	SetIgnoreMoveInput(true);
+	SetIgnoreLookInput(true);
+	bShowMouseCursor = true;
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetHideCursorDuringCapture(false);
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+
+	Station->OnInspectStart();
+}
+
+void AGSD2_ProjectPlayerController::EndInspection()
+{
+	AInspectStation* Station = CurrentStation;
+	if (!Station) return;
+
+	CurrentStation = nullptr;
+
+	// 1인칭 시점으로 복귀
+	SetViewTargetWithBlend(GetPawn(), Station->BlendTime);
+	ResetIgnoreMoveInput();
+	ResetIgnoreLookInput();
+	bShowMouseCursor = false;
+	SetInputMode(FInputModeGameOnly());
+
+	Station->OnInspectEnd();
+}
+
+void AGSD2_ProjectPlayerController::OnInspectClick()
+{
+	if (!CurrentStation) return;
+
+	// 마우스 커서 위치로 라인 트레이스 (05강) 해서 맞은 물체를 조사 오브젝트에 전달
+	FHitResult Hit;
+	if (GetHitResultUnderCursor(ECC_Visibility, false, Hit))
+	{
+		CurrentStation->HandleInspectClick(Hit);
+	}
+}
+
+void AGSD2_ProjectPlayerController::OnInspectExit()
+{
+	if (CurrentStation)
+	{
+		EndInspection();
+	}
 }

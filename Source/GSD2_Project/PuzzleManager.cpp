@@ -3,21 +3,25 @@
 #include "PuzzleSlot.h"
 #include "DoorBase.h"
 #include "GSD2FunctionLibrary.h"
+#include "Camera/CameraComponent.h"
+#include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 APuzzleManager::APuzzleManager()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	// 기본값: 식탁 크기 정도의 조사 범위, 위에서 내려다보는 퍼즐 화면
+	InteractBox->SetBoxExtent(FVector(80.f, 120.f, 40.f));
+	InspectCamera->SetRelativeLocation(FVector(-150.f, 0.f, 170.f));
+	InspectCamera->SetRelativeRotation(FRotator(-50.f, 0.f, 0.f));
 
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Root;
+	PromptText = FText::FromString(TEXT("식탁 조사하기"));
 }
 
 void APuzzleManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 레벨에 있는 슬롯/조각 중 PuzzleID 가 같은 것만 이 관리자에 연결
+	// 레벨에 있는 자리/조각 중 PuzzleID 가 같은 것만 이 퍼즐에 연결
 	TArray<AActor*> FoundActors;
 
 	UGameplayStatics::GetAllActorsOfClass(this, APuzzleSlot::StaticClass(), FoundActors);
@@ -40,6 +44,40 @@ void APuzzleManager::BeginPlay()
 			Piece->Manager = this;
 		}
 	}
+}
+
+void APuzzleManager::HandleInspectClick(const FHitResult& Hit)
+{
+	if (bSolved) return;
+
+	if (APuzzlePiece* Piece = Cast<APuzzlePiece>(Hit.GetActor()))
+	{
+		// 조각을 든 상태에서 자리에 놓인 다른 조각을 누르면 그 자리로 교체
+		if (SelectedPiece && SelectedPiece != Piece && Piece->CurrentSlot)
+		{
+			PlaceSelectedOn(Piece->CurrentSlot);
+		}
+		else
+		{
+			SelectPiece(Piece);
+		}
+	}
+	else if (APuzzleSlot* Slot = Cast<APuzzleSlot>(Hit.GetActor()))
+	{
+		PlaceSelectedOn(Slot);
+	}
+}
+
+void APuzzleManager::OnInspectEnd()
+{
+	// 퍼즐 화면을 나가면 들고 있던 조각을 내려놓는다 (배치 상태는 그대로 유지)
+	if (SelectedPiece)
+	{
+		SelectedPiece->SetSelected(false);
+		SelectedPiece = nullptr;
+	}
+
+	Super::OnInspectEnd();
 }
 
 void APuzzleManager::SelectPiece(APuzzlePiece* Piece)
@@ -65,16 +103,12 @@ void APuzzleManager::PlaceSelectedOn(APuzzleSlot* Slot)
 {
 	if (bSolved || !Slot) return;
 
-	// 아무것도 안 들고 있으면: 슬롯 위 조각을 집거나 안내
+	// 아무것도 안 들고 있으면: 자리 위 조각을 집는다
 	if (!SelectedPiece)
 	{
 		if (Slot->CurrentPiece)
 		{
 			SelectPiece(Slot->CurrentPiece);
-		}
-		else
-		{
-			UGSD2FunctionLibrary::ShowMessage(TEXT("먼저 놓을 물건을 골라야 한다."));
 		}
 		return;
 	}
@@ -124,6 +158,9 @@ void APuzzleManager::CheckSolved()
 	{
 		DoorToUnlock->Unlock(bOpenDoorOnSolved);
 	}
+
+	UGSD2FunctionLibrary::SetProgressFlag(this, SolvedFlag);
+	UGSD2FunctionLibrary::UpdateObjectiveAndHint(this, NextObjective, NextHint);
 
 	OnSolved.Broadcast();
 }

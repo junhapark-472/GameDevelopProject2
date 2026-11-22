@@ -22,6 +22,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void Interact_Implementation(AActor* Interactor) override;
+	virtual FText GetPromptText() const override;
 
 	// 조각이 놓일 위치
 	FVector GetPlaceLocation() const;

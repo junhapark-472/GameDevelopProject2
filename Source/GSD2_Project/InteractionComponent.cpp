@@ -1,5 +1,6 @@
 ﻿#include "InteractionComponent.h"
 #include "InteractableBase.h"
+#include "GSD2_ProjectPlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
@@ -24,6 +25,12 @@ AInteractableBase* UInteractionComponent::FindInteractable() const
 
 	APlayerController* PC = Cast<APlayerController>(Pawn->GetController());
 	if (!PC || !PC->PlayerCameraManager) return nullptr;
+
+	// 조사 화면 중에는 F 상호작용을 하지 않는다 (조사 화면은 마우스로 조작)
+	if (const AGSD2_ProjectPlayerController* GamePC = Cast<AGSD2_ProjectPlayerController>(PC))
+	{
+		if (GamePC->IsInspecting()) return nullptr;
+	}
 
 	const FVector Start = PC->PlayerCameraManager->GetCameraLocation();
 	const FVector End = Start + PC->PlayerCameraManager->GetCameraRotation().Vector() * InteractDistance;

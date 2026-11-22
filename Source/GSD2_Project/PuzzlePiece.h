@@ -23,6 +23,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void Interact_Implementation(AActor* Interactor) override;
+	virtual FText GetPromptText() const override;
 
 	void SetSelected(bool bSelected);
 	void MoveToSlot(APuzzleSlot* Slot);
@@ -41,6 +42,11 @@ public:
 	// 조각 이름 (예: RedCup, B-02)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Puzzle")
 	FName PieceID;
+
+	// 이름표에 보여줄 글씨 (예: B-02 Buspirone). 비우면 PieceID 를 보여줌
+	// (TextRender 기본 글꼴은 한글이 안 나오므로 테스트용은 영문으로)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Puzzle")
+	FText DisplayName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Puzzle")
 	bool bShowLabel = true;

@@ -1,10 +1,12 @@
 ﻿#include "DoorBase.h"
 #include "GSD2FunctionLibrary.h"
+#include "StoryEvent.h"
 #include "InventoryComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/StaticMeshActor.h"
 #include "UObject/ConstructorHelpers.h"
 
 ADoorBase::ADoorBase()
@@ -50,6 +52,12 @@ void ADoorBase::BeginPlay()
 			// 맵에 고정(Static)으로 놓인 액터는 움직일 수 있게 바꾼 뒤 붙인다
 			Actor->GetRootComponent()->SetMobility(EComponentMobility::Movable);
 			Actor->AttachToComponent(DoorMesh, FAttachmentTransformRules::KeepWorldTransform);
+
+			// 붙인 장식(문짝 등)이 상호작용 레이를 가리지 않게 한다 (줍는 아이템은 제외)
+			if (Actor->IsA<AStaticMeshActor>())
+			{
+				Cast<AStaticMeshActor>(Actor)->GetStaticMeshComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+			}
 		}
 	}
 }
@@ -131,6 +139,12 @@ void ADoorBase::ToggleDoor()
 	if (bIsOpen && bStayOpen) return;
 
 	bIsOpen = !bIsOpen;
+
+	if (bIsOpen && OpenEvent && !bOpenEventPlayed)
+	{
+		bOpenEventPlayed = true;
+		OpenEvent->Play();
+	}
 
 	// 한 번 열면 그대로 두는 경우: 라인 트레이스(Visibility)가 통과하도록 해서 안의 물건을 조준할 수 있게
 	if (bIsOpen && bStayOpen)

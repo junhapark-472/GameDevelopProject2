@@ -4,6 +4,7 @@
 #include "InteractableBase.h"
 #include "DoorBase.generated.h"
 
+class AStoryEvent;
 class USceneComponent;
 class UStaticMeshComponent;
 
@@ -91,6 +92,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door|Progress")
 	FText UnlockHint;
 
+	// 처음 열었을 때 재생할 이야기 이벤트 (예: 출입문 봉쇄 후 범인의 침입 시도)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door|Progress")
+	TObjectPtr<AStoryEvent> OpenEvent;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
 	FString LockedMessage = TEXT("잠겨 있다.");
 
@@ -103,4 +108,6 @@ public:
 private:
 	// 0 = 닫힘, 1 = 열림
 	float OpenAlpha = 0.f;
+
+	bool bOpenEventPlayed = false;
 };

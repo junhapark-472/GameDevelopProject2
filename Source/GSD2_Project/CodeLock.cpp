@@ -35,6 +35,16 @@ void ACodeLock::BeginPlay()
 
 	// 정답 자릿수만큼 0 으로 시작
 	Digits.Init(0, Code.Len());
+
+	// 풀리기 전까지 숨김 (보이지도, 조준되지도 않게)
+	for (AActor* Actor : RevealOnSolved)
+	{
+		if (Actor)
+		{
+			Actor->SetActorHiddenInGame(true);
+			Actor->SetActorEnableCollision(false);
+		}
+	}
 }
 
 void ACodeLock::OnInspectStart()
@@ -95,6 +105,15 @@ void ACodeLock::TryOpen()
 
 	UGSD2FunctionLibrary::SetProgressFlag(this, SolvedFlag);
 	UGSD2FunctionLibrary::UpdateObjectiveAndHint(this, NextObjective, NextHint);
+
+	for (AActor* Actor : RevealOnSolved)
+	{
+		if (Actor)
+		{
+			Actor->SetActorHiddenInGame(false);
+			Actor->SetActorEnableCollision(true);
+		}
+	}
 
 	OnOpened.Broadcast();
 

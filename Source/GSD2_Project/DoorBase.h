@@ -20,6 +20,7 @@ class GSD2_PROJECT_API ADoorBase : public AInteractableBase
 public:
 	ADoorBase();
 
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void Interact_Implementation(AActor* Interactor) override;
 	virtual FText GetPromptText() const override;
@@ -66,9 +67,29 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door", meta = (EditCondition = "bSlide"))
 	FVector SlideOffset = FVector(0.f, 30.f, 0.f);
 
+	// true 면 한 번 열면 닫히지 않고, 열린 뒤에는 조준 대상에서 빠진다
+	// (서랍 안 열쇠처럼 안에 있는 물건을 바로 집을 수 있도록)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
+	bool bStayOpen = false;
+
 	// 열려 있을 때 표시할 문구
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
 	FText ClosePromptText;
+
+	// 잠겨 있을 때 표시할 문구
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
+	FText LockedPromptText;
+
+	// 함께 움직일 맵 액터의 이름 (예: 서랍 안 휴대폰). 게임이 시작되면 문/서랍에 붙인다
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
+	TArray<FName> AttachedActorNames;
+
+	// 잠금이 풀렸을 때 바꿀 현재 목표 / 무전기 힌트 (비우면 그대로)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door|Progress")
+	FText UnlockObjective;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door|Progress")
+	FText UnlockHint;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door")
 	FString LockedMessage = TEXT("잠겨 있다.");

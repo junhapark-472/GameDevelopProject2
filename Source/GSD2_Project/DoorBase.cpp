@@ -4,6 +4,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
 
 ADoorBase::ADoorBase()
@@ -30,6 +31,27 @@ ADoorBase::ADoorBase()
 
 	PromptText = FText::FromString(TEXT("문 열기"));
 	ClosePromptText = FText::FromString(TEXT("문 닫기"));
+	LockedPromptText = FText::FromString(TEXT("잠겨 있음"));
+}
+
+void ADoorBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (AttachedActorNames.Num() == 0) return;
+
+	// 이름이 같은 액터를 찾아 문/서랍에 붙인다 (열면 같이 움직임)
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(this, AActor::StaticClass(), FoundActors);
+	for (AActor* Actor : FoundActors)
+	{
+		if (Actor && Actor->GetRootComponent() && AttachedActorNames.Contains(Actor->GetFName()))
+		{
+			// 맵에 고정(Static)으로 놓인 액터는 움직일 수 있게 바꾼 뒤 붙인다
+			Actor->GetRootComponent()->SetMobility(EComponentMobility::Movable);
+			Actor->AttachToComponent(DoorMesh, FAttachmentTransformRules::KeepWorldTransform);
+		}
+	}
 }
 
 void ADoorBase::Tick(float DeltaTime)
@@ -80,7 +102,11 @@ FText ADoorBase::GetPromptText() const
 {
 	if (bLocked)
 	{
-		return FText::FromString(TEXT("잠겨 있음"));
+		return LockedPromptText;
+	}
+	if (bIsOpen && bStayOpen)
+	{
+		return FText::GetEmpty();
 	}
 	return bIsOpen ? ClosePromptText : PromptText;
 }
@@ -90,6 +116,7 @@ void ADoorBase::Unlock(bool bAlsoOpen)
 	if (bLocked)
 	{
 		bLocked = false;
+		UGSD2FunctionLibrary::UpdateObjectiveAndHint(this, UnlockObjective, UnlockHint);
 		OnUnlocked.Broadcast();
 	}
 
@@ -101,5 +128,13 @@ void ADoorBase::Unlock(bool bAlsoOpen)
 
 void ADoorBase::ToggleDoor()
 {
+	if (bIsOpen && bStayOpen) return;
+
 	bIsOpen = !bIsOpen;
+
+	// 한 번 열면 그대로 두는 경우: 라인 트레이스(Visibility)가 통과하도록 해서 안의 물건을 조준할 수 있게
+	if (bIsOpen && bStayOpen)
+	{
+		DoorMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+	}
 }

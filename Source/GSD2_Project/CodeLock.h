@@ -63,6 +63,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CodeLock|Progress")
 	FText NextHint;
 
+	// 풀리기 전에는 숨겨 두었다가 풀리면 나타나는 액터 (예: 일기장 속 접힌 종이)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CodeLock|Progress")
+	TArray<TObjectPtr<AActor>> RevealOnSolved;
+
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "CodeLock")
 	bool bSolved = false;
 

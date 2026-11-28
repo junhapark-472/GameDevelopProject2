@@ -39,7 +39,8 @@ AInteractableBase* UInteractionComponent::FindInteractable() const
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(Pawn);
 
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+	// 작은 구를 시선 방향으로 밀어서 처음 부딪힌 물체를 찾는다 (라인 트레이스의 두꺼운 버전)
+	if (GetWorld()->SweepSingleByChannel(Hit, Start, End, FQuat::Identity, ECC_Visibility, FCollisionShape::MakeSphere(InteractRadius), Params))
 	{
 		return Cast<AInteractableBase>(Hit.GetActor());
 	}

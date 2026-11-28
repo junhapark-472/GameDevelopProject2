@@ -24,4 +24,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	float InteractDistance = 250.f;
+
+	// 조준 판정의 두께 (열쇠처럼 작은 물건도 조준되도록 선 대신 작은 구로 검사)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	float InteractRadius = 5.f;
 };
